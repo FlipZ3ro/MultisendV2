@@ -13,7 +13,7 @@ def send_tokens(w3, sender_address, private_key, contract_address, recipients, c
     w3.middleware_onion.clear()
 
     # Definisikan harga gas yang cukup tinggi (misalnya 20 Gwei)
-    gas_price = w3.to_wei('0.000000007', 'gwei')
+    gas_price = w3.to_wei('0.05', 'gwei')
 
     # Definisikan gas limit
     gas_limit = 200000
@@ -25,8 +25,9 @@ def send_tokens(w3, sender_address, private_key, contract_address, recipients, c
     # Inisialisasi total gas yang dibutuhkan
     total_gas = 0
 
-    # Kumpulkan data transaksi untuk setiap penerima
+    # Kumpulkan data transaksi untuk setiap penerima beserta nomor urut transaksi
     txs = []
+    tx_sequence_number = 0  # Nomor urut transaksi dimulai dari 0
     for recipient_address, amount in recipients.items():
         amount_in_wei = w3.to_wei(amount, 'ether')
         tx = contract.functions.transfer(recipient_address, amount_in_wei).build_transaction({
@@ -34,9 +35,10 @@ def send_tokens(w3, sender_address, private_key, contract_address, recipients, c
             'gasPrice': gas_price,
             'nonce': nonce,
         })
-        txs.append(tx)
+        txs.append((tx_sequence_number, tx))  # Menambahkan nomor urut bersama dengan transaksi yang akan dibuat
         total_gas += gas_limit
         nonce += 1
+        tx_sequence_number += 1  # Menambahkan nomor urut untuk transaksi berikutnya
 
     # Hitung total biaya transaksi
     total_cost = total_gas * gas_price
@@ -48,11 +50,11 @@ def send_tokens(w3, sender_address, private_key, contract_address, recipients, c
 
     # Buat transaksi gabungan
     signed_txs = []
-    for tx in txs:
+    for tx_sequence, tx in txs:
         signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-        signed_txs.append(signed_tx)
+        signed_txs.append((tx_sequence, signed_tx))
 
     # Kirim transaksi gabungan
-    for signed_tx in signed_txs:
+    for tx_sequence, signed_tx in signed_txs:
         tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-        print("Transaksi berhasil dikirim. Hash transaksi:", tx_hash.hex())
+        print(f"Transaksi {tx_sequence} berhasil dikirim. Hash transaksi: {tx_hash.hex()}")
