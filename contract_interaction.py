@@ -19,7 +19,7 @@ def send_tokens(w3, sender_address, private_key, contract_address, recipients, c
     gas_limit = 200000
 
     # Definisikan nonce (jika Anda memiliki multiple transaksi, biasanya nonce harus disesuaikan secara manual)
-    w3.eth.default_account = w3.to_checksum_address(sender_address)
+    w3.eth.default_account = Web3.to_checksum_address(sender_address)  # Konversi ke format checksum
     nonce = w3.eth.get_transaction_count(sender_address)
 
     # Inisialisasi total gas yang dibutuhkan
@@ -29,8 +29,9 @@ def send_tokens(w3, sender_address, private_key, contract_address, recipients, c
     txs = []
     tx_sequence_number = 0  # Nomor urut transaksi dimulai dari 0
     for recipient_address, amount in recipients.items():
+        recipient_address_checksum = Web3.to_checksum_address(recipient_address)  # Konversi ke format checksum
         amount_in_wei = w3.to_wei(amount, 'ether')
-        tx = contract.functions.transfer(recipient_address, amount_in_wei).build_transaction({
+        tx = contract.functions.transfer(recipient_address_checksum, amount_in_wei).build_transaction({
             'gas': gas_limit,
             'gasPrice': gas_price,
             'nonce': nonce,
